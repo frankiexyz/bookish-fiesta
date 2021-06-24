@@ -1,0 +1,74 @@
+---
+- hosts: all
+  become: True
+
+  vars:
+    user: janitor
+  tasks:
+  - name: Update and upgrade apt packages
+    apt:
+      update_cache: yes
+  - name: Install related stuff
+    vars:
+      packages:
+        - virtualenv
+        - python3-pip
+        - python3-setuptools
+        - mtr-tiny
+        - wget
+        - curl
+        - git
+        - tmux
+        - fping
+    apt:
+      name: "{{ packages }}"
+    ignore_errors: yes
+  - name: Create a login user
+    ansible.builtin.user:
+      name: "{{ user }}"
+      groups:
+       - sudo
+      state: present
+      shell: /bin/bash
+      system: no
+      createhome: yes
+      home: /home/{{ user }}
+  - name: Make sure we have a 'wheel' group
+    ansible.builtin.group:
+      name: wheel
+      state: present
+  - name: Allow 'wheel' group to have passwordless sudo
+    lineinfile:
+      dest: /etc/sudoers
+      state: present
+      regexp: '^%wheel'
+      line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+      validate: 'visudo -cf %s'
+    ignore_errors: yes
+  - name: Add sudoers users to wheel group
+    user:
+      name={{ user }}
+      groups=wheel
+      append=yes
+      state=present
+      createhome=yes
+  - name: Add authorized keys
+    authorized_key:
+			key: https://github.com/{{ github_user_for_ssh_key }}.keys
+			user: "{{ ansible_user }}"
+  - name: Check if docker is installed
+    ansible.builtin.shell: which docker
+    register: which_docker
+  - name: Install docker
+    shell: 'curl -fsSL https://get.docker.com |bash'
+    when: which_docker.stdout == ""
+  - name: adding docker0
+    shell: "{{ item }}"
+    with_items:
+      - 'ip link add name docker0 type bridge'
+      - 'ip addr add dev docker0 172.17.244.1/16'
+  - name: Enable & Start Docker service
+    service:
+      name: docker
+      enabled: true
+      state: started

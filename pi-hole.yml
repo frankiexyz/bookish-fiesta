@@ -1,0 +1,31 @@
+---
+- hosts: pi
+  become: True
+
+  tasks:
+  - name: Install related stuff
+    vars:
+      packages:
+        - docker-compose
+    apt:
+      name: "{{ packages }}"
+  - name: download docker compose
+    get_url:
+      url: https://raw.githubusercontent.com/pi-hole/docker-pi-hole/master/docker-compose.yml.example
+      dest: /tmp/docker-compose.yml
+  - name: Line test2
+    blockinfile:
+      path: /tmp/docker-compose.yml
+      state: present
+      line: "{{ item }}"
+    with_items:
+      - 'networks:'
+      - '  default:'
+      - '    driver: bridge'
+      - '    ipam:'
+      - '      config:'
+      - '        - subnet: 172.16.57.0/24'
+  - name: docker-compose
+    shell:
+      cmd: docker-compose up --detach
+      chdir: /tmp/

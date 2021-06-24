@@ -1,0 +1,27 @@
+---
+- hosts: router
+  become: True
+  become_user: root
+
+  tasks:
+  - name: backup config
+    routeros_command:
+      commands: '/export'
+    register: config
+  - name: Git checkout
+    ansible.builtin.git:
+      repo: git@gitlab.com:frankiexyz/router-config.git
+      dest: /tmp/temp-router/
+      clone: True
+  - name: write to file
+    copy:
+      content: "{{config.stdout[0]}}"
+      dest: "/tmp/temp-router/edge.txt"
+  - name: Git commit
+    shell:
+      cmd: git add -A && git commit -m 'config update'
+      chdir: /tmp/temp-router
+  - name: Git push
+    shell:
+      cmd: git push origin main
+      chdir: /tmp/temp-router

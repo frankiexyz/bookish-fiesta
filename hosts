@@ -1,0 +1,13 @@
+[router]
+192.168.88.1:2222
+[pi]
+pi01 ansible_host=192.168.88.232
+pi02 ansible_host=192.168.88.147
+[all:vars]
+ansible_user=janitor
+[router:vars]
+ansible_connection=network_cli
+ansible_network_os=routeros
+[all:vars]
+github_user_for_ssh_key=frankiexyz
+ansible_user=janitor
