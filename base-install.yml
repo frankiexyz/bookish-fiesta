@@ -2,8 +2,6 @@
 - hosts: all
   become: True
 
-  vars:
-    user: janitor
   tasks:
   - name: Update and upgrade apt packages
     apt:
@@ -25,14 +23,14 @@
     ignore_errors: yes
   - name: Create a login user
     ansible.builtin.user:
-      name: "{{ user }}"
+      name: "{{ ansible_user }}"
       groups:
        - sudo
       state: present
       shell: /bin/bash
       system: no
       createhome: yes
-      home: /home/{{ user }}
+      home: /home/{{ ansible_user }}
   - name: Make sure we have a 'wheel' group
     ansible.builtin.group:
       name: wheel
@@ -47,15 +45,15 @@
     ignore_errors: yes
   - name: Add sudoers users to wheel group
     user:
-      name={{ user }}
+      name={{ ansible_user }}
       groups=wheel
       append=yes
       state=present
       createhome=yes
   - name: Add authorized keys
     authorized_key:
-			key: https://github.com/{{ github_user_for_ssh_key }}.keys
-			user: "{{ ansible_user }}"
+      key: https://github.com/{{ github_user_for_ssh_key }}.keys
+      user: "{{ ansible_user }}"
   - name: Check if docker is installed
     ansible.builtin.shell: which docker
     register: which_docker
